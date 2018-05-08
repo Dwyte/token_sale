@@ -2,18 +2,35 @@ pragma solidity ^0.4.2;
 
 contract DappToken{
 	uint256 public totalSupply;
-	// 	Name
 	string public name = "Marty Token";
-	//	Symbol
 	string public symbol = "Mrty";
-	//	Standard
 	string public standard = "Marty Token v1.0";
 
-	//mapping(key, value)
+
+	event Transfer(
+		address indexed _from,
+		address indexed _to,
+		uint256 _value
+	);
+
 	mapping(address => uint256) public balanceOf;
 
 	constructor(uint _initialSupply) public{
 		balanceOf[msg.sender] = _initialSupply;
 		totalSupply = _initialSupply;
+	}
+
+	// Transfer
+	function transfer(address _to, uint256 _value) public returns(bool success){
+		// Exception if account doesnt have enough
+		require(balanceOf[msg.sender] >= _value);
+		// Transfer the balance
+		balanceOf[msg.sender] -= _value;
+		balanceOf[_to] += _value;
+		// Transfer Event
+
+		Transfer(msg.sender, _to, _value);
+		// Return a bool
+		return true;
 	}
 }
