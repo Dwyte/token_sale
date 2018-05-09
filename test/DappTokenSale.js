@@ -1,9 +1,14 @@
 var DappTokenSale = artifacts.require("./DappTokenSale.sol");
-
+var DappToken = artifacts.require("./DappToken.sol");
 
 contract('DappTokenSale', function(accounts){
+	var tokenInstance;
 	var tokenSaleInstance;
-	var tokenPrice = 100000000000000; //wei 	
+	var admin = web3.eth.accounts[0];
+	var numberOfTokens;
+	var buyer = web3.eth.accounts[1];
+	var tokenPrice = 100000000000000;
+	var tokensAvailable = 750000;
 
 
 	it('initializes contract with correct values', function(){
@@ -20,4 +25,44 @@ contract('DappTokenSale', function(accounts){
 			assert.equal(price, tokenPrice, 'correct token price');
 		});
 	});
+
+
+	it('facilitates token buying', function(){
+		return DappToken.deployed().then(function(instance){
+			tokenInstance = instance;
+			return DappTokenSale.deployed();
+		}).then(function(instance){
+			tokenSaleInstance = instance;
+			//Provision 75% of all tokens to the token sale
+			return tokenInstance.transfer(tokenSaleInstance.address, tokensAvailable, {from: admin});
+		}).then(function(receipt){
+			numberOfTokens = 10;
+			return tokenSaleInstance.buyTokens(numberOfTokens, {from: buyer, value: numberOfTokens * tokenPrice})
+		}).then(function(receipt){
+			assert.equal(receipt.logs.length, 1, 'triggers one event');
+			assert.equal(receipt.logs[0].event, 'Sell', 'should be the Sell event');
+			assert.equal(receipt.logs[0].args._buyer, buyer, 'logs the account that purchased the tokens');
+			assert.equal(receipt.logs[0].args._amount, numberOfTokens, 'logs the number of tokens purchased');
+			return tokenSaleInstance.tokenSold();
+		}).then(function(amount){
+			assert.equal(amount.toNumber(), numberOfTokens, 'increments the number of Tokens Sold');
+			return tokenInstance.balanceOf(buyer);
+		}).then(function(balance){
+			assert.equal(balance.toNumber(), numberOfTokens);
+			return tokenInstance.balanceOf(tokenSaleInstance.address);
+		}).then(function(balance){
+			assert.equal(balance.toNumber(), tokensAvailable - numberOfTokens);
+			// Try to buy tokens different from the ether value
+			return tokenSaleInstance.buyTokens(numberOfTokens, {from: buyer, value: 1});
+		}).then(assert.fail).catch(function(error){
+			assert(error.message.indexOf('revert') >= 0, 'msg.value must equal number of tokens in wei');
+			return tokenSaleInstance.buyTokens(800000, {from: buyer, value: numberOfTokens * tokenPrice})
+		}).then(assert.fail).catch(function(error){
+			assert(error.message.indexOf('revert') >= 0, 'cannot purchase more than available');
+		});;
+	});
+
+
+
+
 });
