@@ -20,7 +20,6 @@ contract DappTokenSale{
 		require(y == 0 || (z = x * y) / y == x);
 	}
 
-
 	// Buy Tokens
 	function buyTokens(uint256 _numberOfTokens) public payable{
 		// Require the value is equal to tokens
@@ -36,7 +35,15 @@ contract DappTokenSale{
 		tokenSold += _numberOfTokens;
 
 		// emit a sell event
-		Sell(msg.sender, _numberOfTokens);
+		emit Sell(msg.sender, _numberOfTokens);
 	}
 
+	function endSale() public{
+		// Require Admin
+		require(msg.sender == admin);
+		// Transfer remaining DappTokenns to Admin
+		require(tokenContract.transfer(admin, tokenContract.balanceOf(this)));
+		// Deploy contract
+		selfdestruct(admin);
+	}
 }
