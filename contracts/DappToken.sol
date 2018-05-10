@@ -1,84 +1,61 @@
 pragma solidity ^0.4.2;
 
-contract DappToken{
-	uint256 public totalSupply;
-	string public name = "Marty Token";
-	string public symbol = "Mrty";
-	string public standard = "Marty Token v1.0";
+contract DappToken {
+    string  public name = "DApp Token";
+    string  public symbol = "DAPP";
+    string  public standard = "DApp Token v1.0";
+    uint256 public totalSupply;
 
+    event Transfer(
+        address indexed _from,
+        address indexed _to,
+        uint256 _value
+    );
 
-	event Transfer(
-		address indexed _from,
-		address indexed _to,
-		uint256 _value
-	);
+    event Approval(
+        address indexed _owner,
+        address indexed _spender,
+        uint256 _value
+    );
 
-	//approve
-	event Approval(
-		address indexed _owner, // I the owner
-		address indexed _spender, // approved the spender
-		uint256 _value	// to transfer x amount of tokens
-	);
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
+    function DappToken (uint256 _initialSupply) public {
+        balanceOf[msg.sender] = _initialSupply;
+        totalSupply = _initialSupply;
+    }
 
-	mapping(address => uint256) public balanceOf;
-	mapping(address => mapping(address => uint256)) public allowance;
-	// allowance
+    function transfer(address _to, uint256 _value) public returns (bool success) {
+        require(balanceOf[msg.sender] >= _value);
 
+        balanceOf[msg.sender] -= _value;
+        balanceOf[_to] += _value;
 
+        Transfer(msg.sender, _to, _value);
 
-	constructor(uint _initialSupply) public{
-		balanceOf[msg.sender] = _initialSupply;
-		totalSupply = _initialSupply;
-	}
+        return true;
+    }
 
-	// Transfer
-	function transfer(address _to, uint256 _value) public returns(bool success){
-		// Exception if account doesnt have enough
-		require(balanceOf[msg.sender] >= _value);
-		// Transfer the balance
-		balanceOf[msg.sender] -= _value;
-		balanceOf[_to] += _value;
-		// Transfer Event
+    function approve(address _spender, uint256 _value) public returns (bool success) {
+        allowance[msg.sender][_spender] = _value;
 
-		emit Transfer(msg.sender, _to, _value);
-		// Return a bool
-		return true;
-	}
+        Approval(msg.sender, _spender, _value);
 
-	// Delegated Transfer
+        return true;
+    }
 
-	// approve
-	function approve(address _spender,uint256 _value) public returns(bool success){
-		// Allowance
-		allowance[msg.sender][_spender] = _value;  
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
+        require(_value <= balanceOf[_from]);
+        require(_value <= allowance[_from][msg.sender]);
 
-		// Approve event
-		emit Approval(msg.sender, _spender, _value);
+        balanceOf[_from] -= _value;
+        balanceOf[_to] += _value;
 
-		return true;
-	}
+        allowance[_from][msg.sender] -= _value;
 
-	// transferFrom
-	function transferFrom(address _from, address _to, uint256 _value) public returns(bool success){
-		//require _from has enought token
-		require(_value <= balanceOf[_from]);
-		// require allowance is big enough
-		require(_value <= allowance[_from][msg.sender]);
-		//change abalnce
-		balanceOf[_from] -= _value;
-		balanceOf[_to] += _value;
+        Transfer(_from, _to, _value);
 
-		//update allowance
-		allowance[_from][msg.sender] -= _value;
-
-
-
-		//Transfer Event
-		emit Transfer(_from, _to, _value);
-
-
-		//return bool
-		return true;
-	}
+        return true;
+    }
 }
